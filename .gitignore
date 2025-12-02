@@ -2,4 +2,7 @@ ms-playwright/
 __pycache__/
 *.pyc
 page.html
+build/
+dist/
+*.spec
 

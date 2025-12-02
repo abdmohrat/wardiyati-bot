@@ -10,19 +10,22 @@ from playwright.async_api import async_playwright
 import customtkinter as ctk
 from tkinter import messagebox
 
-# Set up local Playwright browsers path
-script_dir = os.path.dirname(os.path.abspath(__file__))
-local_browsers_path = os.path.join(script_dir, "ms-playwright")
+# Set up local Playwright browsers path (works for script and PyInstaller onefile)
+def get_base_path():
+    """Return base path for assets (handles PyInstaller onefile)."""
+    if getattr(sys, '_MEIPASS', None):  # PyInstaller onefile temp dir
+        return sys._MEIPASS
+    if getattr(sys, 'frozen', False):   # PyInstaller one-folder
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+local_browsers_path = os.path.join(get_base_path(), "ms-playwright")
 if os.path.exists(local_browsers_path):
     os.environ['PLAYWRIGHT_BROWSERS_PATH'] = local_browsers_path
 
 # ==============================================================================
 # --- ⚙️ SETUP AND CONFIGURATION ---
 # ==============================================================================
-
-def get_base_path():
-    """Gets the base path, whether running as a script or bundled .exe."""
-    return os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(__file__)
 
 def get_playwright_browsers_path():
     """Determines the path where Playwright browsers are stored."""
@@ -103,7 +106,7 @@ async def run_automation(config, shifts_to_book, room_number, cooldown, log_queu
         LOGIN_URL = "https://wardyati.com/login/"
         SHIFTS_URL = get_shifts_url(room_number, shifts_to_book)
         YOUR_USERNAME = config.get('Credentials', 'username'); YOUR_PASSWORD = config.get('Credentials', 'password')
-        SCAN_INTERVAL_SECONDS = config.getfloat('Settings', 'scan_interval_seconds'); COOLDOWN_AFTER_BOOKING_SECONDS = cooldown + 1
+        SCAN_INTERVAL_SECONDS = config.getfloat('Settings', 'scan_interval_seconds'); COOLDOWN_AFTER_BOOKING_SECONDS = cooldown + 0.5
         USERNAME_SELECTOR = "#id_username"
         PASSWORD_SELECTOR = "#id_password"
         LOGIN_BUTTON_TEXT = "تسجيل الدخول"
