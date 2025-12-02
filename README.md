@@ -1,20 +1,20 @@
 ﻿# Wardyati Shift Booker
 
 Friendly guide for running the bot, now with multi-account booking.
-This README assumes you use the packaged **`WardyatiBot.exe`** from Releases.
-If you prefer source, the batch scripts still work (`RUN BOT.bat`, `RUN BOT HIDDEN.vbs`, `FIRST TIME SETUP.bat`).
+This README assumes you have downloaded the bot as a zip file, which includes `bot.py`, the `ms-playwright` browser files, and `RUN BOT HIDDEN.vbs`.
 
-## Download & Run (EXE)
-1. Grab the latest `WardyatiBot.exe` from the GitHub Releases page.
-2. Double-click the EXE. (No install needed; bundled Chromium is included.)
-3. On first launch, enter your Wardyati username (email) and password when prompted.
-4. Fill in:
-   - **Room Number**: From your Wardyati room URL (e.g., `2761`).
-   - **Cooldown (sec)**: Delay between booking attempts (15–30 recommended).
-   - **Date**: Copy exact date from Wardyati (e.g., `2025-12-01`).
-   - **Shift Name**: Copy exact shift title (e.g., `Morning`, `Mid`, `Night`).
-5. Click **Add Shift to Target List** for each shift.
-6. Click **Start Bot**. The bot will log in, scan, and book when available with live log updates.
+## Setup & Run
+1.  **Unzip the downloaded file**: Extract the contents of the zip file to a folder of your choice.
+2.  **First-time setup**: Run `FIRST TIME SETUP.bat`. This script will install necessary Python packages. (The browser files are already included in the `ms-playwright` folder within the zip).
+3.  Once setup is complete, run `RUN BOT HIDDEN.vbs` to launch the bot in the background without a console window.
+4.  On first launch of `bot.py`, enter your Wardyati username (email) and password when prompted.
+5.  Fill in:
+    - **Room Number**: From your Wardyati room URL (e.g., `2761`).
+    - **Cooldown (sec)**: Delay between booking attempts (15–30 recommended).
+    - **Date**: Copy exact date from Wardyati (e.g., `2025-12-01`).
+    - **Shift Name**: Copy exact shift title (e.g., `Morning`, `Mid`, `Night`).
+6.  Click **Add Shift to Target List** for each shift.
+7.  Click **Start Bot**. The bot will log in, scan, and book when available with live log updates.
 
 ## New: Multi-account booking
 - **Accounts panel**: Add multiple username/password pairs (saved locally to `accounts.json`, auto-loaded next run).
@@ -44,7 +44,7 @@ If you prefer source, the batch scripts still work (`RUN BOT.bat`, `RUN BOT HIDD
 - Room error: ensure numeric room number from URL.
 - Shifts not found: date and shift name must match Wardyati exactly.
 - Python errors: if running from source, ensure Python is on PATH (the setup script can handle this).
-- If the EXE is blocked by Windows SmartScreen, choose **More info → Run anyway**.
+
 
 ## Tips
 - Copy dates and shift names directly from the website to avoid typos.
