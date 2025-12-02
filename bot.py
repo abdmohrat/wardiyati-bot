@@ -695,7 +695,7 @@ class BotApp(ctk.CTk):
             title = ctk.CTkLabel(row, text=f"{idx+1}. {account.get('username', '')}", font=ctk.CTkFont(weight="bold"))
             title.pack(side="left", padx=6, pady=6)
 
-            summary_text = "Using main room & shift list" if account.get("use_shared", True) else f"Custom: room {account.get('room', 'Г?\"')} | shifts {len(account.get('shifts', []))}"
+            summary_text = "Using main room & shift list" if account.get("use_shared", True) else f"Custom: room {account.get('room', '—')} | shifts {len(account.get('shifts', []))}"
             ctk.CTkLabel(row, text=summary_text, text_color="gray80").pack(side="left", padx=6)
 
             shared_var = ctk.BooleanVar(value=account.get("use_shared", True))
@@ -709,24 +709,81 @@ class BotApp(ctk.CTk):
             )
             toggle.pack(side="left", padx=4)
 
+            # Buttons container for right alignment
+            btns_frame = ctk.CTkFrame(row, fg_color="transparent")
+            btns_frame.pack(side="right", padx=4)
+
             cfg_btn = ctk.CTkButton(
-                row,
-                text="Account-specific setup",
-                width=110,
+                btns_frame,
+                text="Config",
+                width=60,
                 command=lambda i=idx: self.open_account_config(i),
                 state="normal" if not account.get("use_shared", True) else "disabled"
             )
-            cfg_btn.pack(side="right", padx=4)
+            cfg_btn.pack(side="left", padx=2)
+
+            edit_btn = ctk.CTkButton(
+                btns_frame,
+                text="Edit",
+                width=60,
+                fg_color="orange",
+                hover_color="darkorange",
+                command=lambda i=idx: self.edit_account_credentials(i)
+            )
+            edit_btn.pack(side="left", padx=2)
 
             remove_btn = ctk.CTkButton(
-                row,
+                btns_frame,
                 text="Remove",
-                width=70,
+                width=60,
                 fg_color="red",
                 hover_color="darkred",
                 command=lambda i=idx: self.remove_account(i)
             )
-            remove_btn.pack(side="right", padx=4)
+            remove_btn.pack(side="left", padx=2)
+
+    def edit_account_credentials(self, index):
+        """Open a dialog to edit account username/password."""
+        if not (0 <= index < len(self.accounts)):
+            return
+
+        account = self.accounts[index]
+
+        edit_window = ctk.CTkToplevel(self)
+        edit_window.title(f"Edit Credentials: {self.account_display_name(account, index)}")
+        edit_window.geometry("400x300")
+        edit_window.transient(self)
+        edit_window.grab_set()
+
+        ctk.CTkLabel(edit_window, text="Edit Account Credentials", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=15)
+
+        ctk.CTkLabel(edit_window, text="Username (email)").pack(pady=(5, 0))
+        user_entry = ctk.CTkEntry(edit_window, placeholder_text="Username")
+        user_entry.insert(0, account.get("username", ""))
+        user_entry.pack(pady=5, padx=30, fill="x")
+
+        ctk.CTkLabel(edit_window, text="Password").pack(pady=(10, 0))
+        pass_entry = ctk.CTkEntry(edit_window, placeholder_text="Password", show="*")
+        pass_entry.insert(0, account.get("password", ""))
+        pass_entry.pack(pady=5, padx=30, fill="x")
+
+        def save_changes():
+            new_user = user_entry.get().strip()
+            new_pass = pass_entry.get().strip()
+
+            if not new_user or not new_pass:
+                messagebox.showerror("Error", "Both username and password are required.")
+                return
+
+            account["username"] = new_user
+            account["password"] = new_pass
+
+            self.save_accounts()
+            self.refresh_accounts_display()
+            self.log_queue.put(f"✏️ Updated credentials for account {index+1}")
+            edit_window.destroy()
+
+        ctk.CTkButton(edit_window, text="Save Changes", command=save_changes, width=200).pack(pady=25)
 
     def add_account(self):
         """Add a new account to the list."""
