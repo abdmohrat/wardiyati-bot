@@ -245,7 +245,7 @@ class BotApp(ctk.CTk):
 
         ctk.CTkLabel(accounts_frame, text="Accounts (run multiple in parallel)", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, padx=10, pady=8, sticky="w", columnspan=2)
         self.default_shared_var = ctk.BooleanVar(value=True)
-        self.shared_hint = ctk.CTkCheckBox(accounts_frame, text="Use shared room/shifts for new accounts", variable=self.default_shared_var, onvalue=True, offvalue=False, fg_color="#22c55e", hover_color="#16a34a")
+        self.shared_hint = ctk.CTkCheckBox(accounts_frame, text="New accounts use main room & shift list (default)", variable=self.default_shared_var, onvalue=True, offvalue=False, fg_color="#22c55e", hover_color="#16a34a")
         self.shared_hint.grid(row=0, column=2, padx=10, pady=8, sticky="e")
 
         self.account_user_entry = ctk.CTkEntry(accounts_frame, placeholder_text="Username (email)")
@@ -695,13 +695,13 @@ class BotApp(ctk.CTk):
             title = ctk.CTkLabel(row, text=f"{idx+1}. {account.get('username', '')}", font=ctk.CTkFont(weight="bold"))
             title.pack(side="left", padx=6, pady=6)
 
-            summary_text = "Shared room & shifts" if account.get("use_shared", True) else f"Custom | room {account.get('room', 'Г?\"')} | shifts {len(account.get('shifts', []))}"
+            summary_text = "Using main room & shift list" if account.get("use_shared", True) else f"Custom: room {account.get('room', 'Г?\"')} | shifts {len(account.get('shifts', []))}"
             ctk.CTkLabel(row, text=summary_text, text_color="gray80").pack(side="left", padx=6)
 
             shared_var = ctk.BooleanVar(value=account.get("use_shared", True))
             toggle = ctk.CTkCheckBox(
                 row,
-                text="Shared",
+                text="Use main list",
                 variable=shared_var,
                 onvalue=True,
                 offvalue=False,
@@ -711,7 +711,7 @@ class BotApp(ctk.CTk):
 
             cfg_btn = ctk.CTkButton(
                 row,
-                text="Custom Config",
+                text="Account-specific setup",
                 width=110,
                 command=lambda i=idx: self.open_account_config(i),
                 state="normal" if not account.get("use_shared", True) else "disabled"
@@ -1135,19 +1135,19 @@ class BotApp(ctk.CTk):
             label = self.account_display_name(account, idx)
             if account.get("use_shared", True):
                 if not shared_room:
-                    self.log_queue.put("ERROR: Room Number is required for shared mode.")
+                    self.log_queue.put("ERROR: Room Number is required for accounts using the main list.")
                     return
                 if not shared_room.isdigit():
                     self.log_queue.put("ERROR: Room Number must contain only numbers.")
                     return
                 if not shared_cooldown:
-                    self.log_queue.put("ERROR: Cooldown time is required for shared mode.")
+                    self.log_queue.put("ERROR: Cooldown time is required for accounts using the main list.")
                     return
                 if not shared_cooldown.isdigit():
                     self.log_queue.put("ERROR: Cooldown must be a number (seconds).")
                     return
                 if not shared_shifts:
-                    self.log_queue.put("ERROR: Add at least one shift for shared mode.")
+                    self.log_queue.put("ERROR: Add at least one shift to the main list (or switch the account to custom).")
                     return
                 runs.append({"room": shared_room, "cooldown": int(shared_cooldown), "shifts": shared_shifts.copy(), "credentials": account, "label": label})
             else:

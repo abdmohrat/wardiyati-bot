@@ -17,12 +17,12 @@ If you prefer source, the batch scripts still work (`RUN BOT.bat`, `RUN BOT HIDD
 6. Click **Start Bot**. The bot will log in, scan, and book when available with live log updates.
 
 ## New: Multi-account booking
-- **Accounts panel**: Add multiple username/password pairs. They’re saved locally to `accounts.json` and auto-loaded next run.
-- **Shared vs custom configs**: For each account choose:
-  - **Shared**: use the main Room/Cooldown/Shift list.
-  - **Custom Config**: set a dedicated room, cooldown, and shift list for that account.
-- **Parallel runs**: Starting the bot launches one browser per account; logs are prefixed with the account label.
-- **Stop**: Stop button halts all active accounts.
+- **Accounts panel**: Add multiple username/password pairs (saved locally to `accounts.json`, auto-loaded next run).
+- **Main list vs account-specific** (per account):
+  - **Use main list**: the account borrows the main Room/Cooldown/Shift list you set at the top.
+  - **Account-specific setup**: give that account its own room, cooldown, and shift list.
+- **Parallel runs**: Start launches one browser per account; log lines are prefixed with the account label.
+- **Stop**: Stop button halts all active accounts at once.
 
 ## Features
 - Sound notifications when shifts are booked.
