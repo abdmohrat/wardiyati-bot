@@ -5,4 +5,7 @@ page.html
 build/
 dist/
 *.spec
+config.ini
+accounts.json
+room_presets.json
 

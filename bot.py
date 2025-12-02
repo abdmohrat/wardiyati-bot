@@ -1,5 +1,6 @@
 import asyncio
 import configparser
+import json
 import os
 import threading
 import queue
@@ -22,6 +23,8 @@ def get_base_path():
 local_browsers_path = os.path.join(get_base_path(), "ms-playwright")
 if os.path.exists(local_browsers_path):
     os.environ['PLAYWRIGHT_BROWSERS_PATH'] = local_browsers_path
+
+ACCOUNTS_FILE = os.path.join(get_base_path(), "accounts.json")
 
 # ==============================================================================
 # --- ⚙️ SETUP AND CONFIGURATION ---
@@ -100,12 +103,21 @@ def get_shifts_url(room_number, shifts_to_book):
     else:
         return base_url
 
-async def run_automation(config, shifts_to_book, room_number, cooldown, log_queue, stop_event=None):
-    def log(message): log_queue.put(message)
+async def run_automation(config, shifts_to_book, room_number, cooldown, log_queue, stop_event=None, credentials=None, account_label=""):
+    prefix = f"[{account_label}] " if account_label else ""
+    def log(message): log_queue.put(f"{prefix}{message}")
     try:
         LOGIN_URL = "https://wardyati.com/login/"
         SHIFTS_URL = get_shifts_url(room_number, shifts_to_book)
-        YOUR_USERNAME = config.get('Credentials', 'username'); YOUR_PASSWORD = config.get('Credentials', 'password')
+        if credentials:
+            YOUR_USERNAME = credentials.get('username', '')
+            YOUR_PASSWORD = credentials.get('password', '')
+        else:
+            YOUR_USERNAME = config.get('Credentials', 'username')
+            YOUR_PASSWORD = config.get('Credentials', 'password')
+        if not YOUR_USERNAME or not YOUR_PASSWORD:
+            log("ƒ?O FATAL ERROR: Missing account credentials.")
+            return
         SCAN_INTERVAL_SECONDS = config.getfloat('Settings', 'scan_interval_seconds'); COOLDOWN_AFTER_BOOKING_SECONDS = cooldown + 0.5
         USERNAME_SELECTOR = "#id_username"
         PASSWORD_SELECTOR = "#id_password"
@@ -133,7 +145,7 @@ async def run_automation(config, shifts_to_book, room_number, cooldown, log_queu
             await page.wait_for_load_state("domcontentloaded")
             log("\n--- Step 3: Starting LIVE SHIFT SCANNING ---")
             while shifts_to_book and (stop_event is None or not stop_event.is_set()):
-                log_queue.put(f"Scanning for {len(shifts_to_book)} target shifts...")
+                log(f"Scanning for {len(shifts_to_book)} target shifts...")
                 booked_one_in_this_cycle = False
                 for target_shift in shifts_to_book[:]:
                     try:
@@ -162,8 +174,8 @@ async def run_automation(config, shifts_to_book, room_number, cooldown, log_queu
                 log("\n🎉 All target shifts processed!")
                 log("--- BOT FINISHED ---")
 
-            log("The browser will close in 30 seconds.")
-            await asyncio.sleep(30)
+            log("The browser will close in 10 seconds.")
+            await asyncio.sleep(10)
             await browser.close()
     except Exception as e: log(f"❌ FATAL ERROR: {e}"); log("Bot stopped. Check credentials, room number, or internet.")
 
@@ -173,18 +185,27 @@ async def run_automation(config, shifts_to_book, room_number, cooldown, log_queu
 class BotApp(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.config = None; self.target_shifts = []; self.log_queue = queue.Queue(); self.bot_thread = None; self.stop_event = threading.Event()
+        self.config = None
+        self.target_shifts = []
+        self.accounts = []
+        self.log_queue = queue.Queue()
+        self.bot_threads = []
+        self.stop_event = threading.Event()
         self.bot_status = "idle"  # idle, running, stopping
         self.current_theme = "dark"  # Track current theme
         self.presets = self.load_presets()  # Load saved room presets
+        self.accounts = self.load_accounts()  # Load saved accounts (multi-account)
         self.log_message_count = 0  # Track number of log messages
+        self.active_runs = 0  # Track how many account runs are active
         self.title("Wardyati Shift Booker"); self.geometry("1100x1100"); ctk.set_appearance_mode("dark"); ctk.set_default_color_theme("green")
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(3, weight=1)
-        self.grid_rowconfigure(4, weight=2)
+
+        # Scrollable root container so all sections remain reachable on smaller screens
+        self.scroll_container = ctk.CTkScrollableFrame(self, corner_radius=0, label_text=None)
+        self.scroll_container.pack(fill="both", expand=True)
+        self.scroll_container.grid_columnconfigure(0, weight=1)
 
         # Header / status
-        status_frame = ctk.CTkFrame(self, corner_radius=14)
+        status_frame = ctk.CTkFrame(self.scroll_container, corner_radius=14)
         status_frame.grid(row=0, column=0, padx=14, pady=(14, 8), sticky="ew")
         status_frame.grid_columnconfigure(0, weight=1); status_frame.grid_columnconfigure(3, weight=0)
         self.status_icon = ctk.CTkLabel(status_frame, text="⚪", font=ctk.CTkFont(size=22))
@@ -201,7 +222,7 @@ class BotApp(ctk.CTk):
         self.progress_bar.grid_remove()
 
         # Quick stats row
-        stats_frame = ctk.CTkFrame(self, corner_radius=14)
+        stats_frame = ctk.CTkFrame(self.scroll_container, corner_radius=14)
         stats_frame.grid(row=1, column=0, padx=14, pady=6, sticky="ew")
         for i in range(3): stats_frame.grid_columnconfigure(i, weight=1)
         def pill(label_text, value_text):
@@ -217,9 +238,30 @@ class BotApp(ctk.CTk):
         self.cooldown_pill.grid(row=0, column=1, padx=6, pady=6, sticky="ew")
         self.room_pill.grid(row=0, column=2, padx=6, pady=6, sticky="ew")
 
+        # Accounts management
+        accounts_frame = ctk.CTkFrame(self.scroll_container, corner_radius=14)
+        accounts_frame.grid(row=2, column=0, padx=14, pady=6, sticky="ew")
+        accounts_frame.grid_columnconfigure(1, weight=1); accounts_frame.grid_columnconfigure(2, weight=1)
+
+        ctk.CTkLabel(accounts_frame, text="Accounts (run multiple in parallel)", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, padx=10, pady=8, sticky="w", columnspan=2)
+        self.default_shared_var = ctk.BooleanVar(value=True)
+        self.shared_hint = ctk.CTkCheckBox(accounts_frame, text="Use shared room/shifts for new accounts", variable=self.default_shared_var, onvalue=True, offvalue=False, fg_color="#22c55e", hover_color="#16a34a")
+        self.shared_hint.grid(row=0, column=2, padx=10, pady=8, sticky="e")
+
+        self.account_user_entry = ctk.CTkEntry(accounts_frame, placeholder_text="Username (email)")
+        self.account_user_entry.grid(row=1, column=0, padx=10, pady=6, sticky="ew")
+        self.account_pass_entry = ctk.CTkEntry(accounts_frame, placeholder_text="Password", show="*")
+        self.account_pass_entry.grid(row=1, column=1, padx=10, pady=6, sticky="ew")
+        add_account_btn = ctk.CTkButton(accounts_frame, text="Add Account", command=self.add_account)
+        add_account_btn.grid(row=1, column=2, padx=10, pady=6, sticky="ew")
+
+        self.accounts_scroll = ctk.CTkScrollableFrame(accounts_frame, height=140)
+        self.accounts_scroll.grid(row=2, column=0, columnspan=3, padx=10, pady=(4, 10), sticky="nsew")
+        self.refresh_accounts_display()
+
         # Session + add shift
-        session_frame = ctk.CTkFrame(self, corner_radius=14)
-        session_frame.grid(row=2, column=0, padx=14, pady=6, sticky="ew")
+        session_frame = ctk.CTkFrame(self.scroll_container, corner_radius=14)
+        session_frame.grid(row=3, column=0, padx=14, pady=6, sticky="ew")
         session_frame.grid_columnconfigure(1, weight=1); session_frame.grid_columnconfigure(3, weight=1)
         ctk.CTkLabel(session_frame, text="Room Number", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, padx=10, pady=8, sticky="w")
         self.room_entry = ctk.CTkEntry(session_frame, placeholder_text="e.g., 2761"); self.room_entry.grid(row=0, column=1, padx=10, pady=8, sticky="ew")
@@ -241,14 +283,14 @@ class BotApp(ctk.CTk):
         actions_frame.grid_columnconfigure((0, 1, 2), weight=1)
         self.add_button = ctk.CTkButton(actions_frame, text="Add Shift ➕", command=self.add_shift)
         self.add_button.grid(row=0, column=0, padx=6, pady=4, sticky="ew")
-        self.start_button = ctk.CTkButton(actions_frame, text="🚀 Start Bot", command=self.start_bot_thread, height=38, font=ctk.CTkFont(size=15, weight="bold"))
+        self.start_button = ctk.CTkButton(actions_frame, text="Start Bot", command=self.start_bot_thread, height=38, font=ctk.CTkFont(size=15, weight="bold"))
         self.start_button.grid(row=0, column=1, padx=6, pady=4, sticky="ew")
         self.stop_button = ctk.CTkButton(actions_frame, text="🛑 Stop Bot", command=self.stop_bot, height=38, font=ctk.CTkFont(size=15, weight="bold"), fg_color="red", hover_color="darkred", state="disabled")
         self.stop_button.grid(row=0, column=2, padx=6, pady=4, sticky="ew")
 
         # Shifts list
-        display_frame = ctk.CTkFrame(self, corner_radius=14)
-        display_frame.grid(row=3, column=0, padx=14, pady=6, sticky="nsew")
+        display_frame = ctk.CTkFrame(self.scroll_container, corner_radius=14)
+        display_frame.grid(row=4, column=0, padx=14, pady=6, sticky="nsew")
         display_frame.grid_columnconfigure(0, weight=1); display_frame.grid_rowconfigure(1, weight=1)
         header_frame = ctk.CTkFrame(display_frame, fg_color="transparent"); header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=8)
         ctk.CTkLabel(header_frame, text="🎯 Target Shifts", font=ctk.CTkFont(size=16, weight="bold")).pack(side="left")
@@ -257,8 +299,8 @@ class BotApp(ctk.CTk):
         self.shifts_scroll_frame.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="nsew")
 
         # Log panel
-        log_frame = ctk.CTkFrame(self, corner_radius=14)
-        log_frame.grid(row=4, column=0, padx=14, pady=10, sticky="nsew")
+        log_frame = ctk.CTkFrame(self.scroll_container, corner_radius=14)
+        log_frame.grid(row=5, column=0, padx=14, pady=10, sticky="nsew")
         log_frame.grid_columnconfigure(0, weight=1); log_frame.grid_rowconfigure(1, weight=1)
         log_header_frame = ctk.CTkFrame(log_frame, fg_color="transparent"); log_header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=8)
         log_title_frame = ctk.CTkFrame(log_header_frame, fg_color="transparent"); log_title_frame.pack(side="left", fill="x", expand=True)
@@ -287,8 +329,15 @@ class BotApp(ctk.CTk):
     def run_setup_tasks(self):
         self.config = load_or_create_config(self)
         if self.config is None: self.after(100, self.destroy); return
-        self.log_queue.put("✅ Setup complete. Ready to book shifts.")
-        self.start_button.configure(state="normal", text="🚀 Start Bot")
+        if not self.accounts and self.config is not None and self.config.has_section('Credentials'):
+            username = self.config.get('Credentials', 'username', fallback="").strip()
+            password = self.config.get('Credentials', 'password', fallback="").strip()
+            if username and password:
+                self.accounts.append({"username": username, "password": password, "use_shared": True, "room": "", "cooldown": "", "shifts": []})
+                self.save_accounts()
+                self.after(0, self.refresh_accounts_display)
+        self.log_queue.put("Setup complete. Ready to book shifts.")
+        self.start_button.configure(state="normal", text="Start Bot")
         self.update_status("idle", "Ready to start")
         self.after(0, self.refresh_stats)
     def add_shift(self):
@@ -576,6 +625,249 @@ class BotApp(ctk.CTk):
         self.log_message_count += 1
         self.update_log_stats()
 
+    def account_display_name(self, account, index=None):
+        """Return a short label for an account without exposing full email."""
+        username = account.get("username", "") or "Account"
+        base = username.split("@")[0] if "@" in username else username
+        if len(base) > 3:
+            base = f"{base[:3]}***"
+        label = base or "Account"
+        if index is not None:
+            return f"{index+1}:{label}"
+        return label
+
+    def load_accounts(self):
+        """Load saved accounts; fall back to single-account config if present."""
+        try:
+            if os.path.exists(ACCOUNTS_FILE):
+                with open(ACCOUNTS_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    if isinstance(data, list):
+                        return data
+        except Exception:
+            # Continue to fallback
+            pass
+
+        # Fallback to existing config.ini credentials (backwards compatibility)
+        try:
+            fallback_config = configparser.ConfigParser()
+            config_path = os.path.join(get_base_path(), 'config.ini')
+            if os.path.exists(config_path):
+                fallback_config.read(config_path)
+                if fallback_config.has_section('Credentials'):
+                    username = fallback_config.get('Credentials', 'username', fallback="").strip()
+                    password = fallback_config.get('Credentials', 'password', fallback="").strip()
+                    if username and password:
+                        return [{
+                            "username": username,
+                            "password": password,
+                            "use_shared": True,
+                            "room": "",
+                            "cooldown": "",
+                            "shifts": []
+                        }]
+        except Exception:
+            pass
+
+        return []
+
+    def save_accounts(self):
+        """Persist accounts to disk (runtime only)."""
+        try:
+            with open(ACCOUNTS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(self.accounts, f, indent=2, ensure_ascii=False)
+        except Exception:
+            self.log_queue.put("Гs Л,? WARNING: Unable to save accounts file.")
+
+    def refresh_accounts_display(self):
+        """Render account rows with shared/custom controls."""
+        for widget in self.accounts_scroll.winfo_children():
+            widget.destroy()
+
+        if not self.accounts:
+            ctk.CTkLabel(self.accounts_scroll, text="Add at least one account to run the bot.", text_color="gray").pack(pady=6)
+            return
+
+        for idx, account in enumerate(self.accounts):
+            row = ctk.CTkFrame(self.accounts_scroll)
+            row.pack(fill="x", padx=4, pady=3)
+
+            title = ctk.CTkLabel(row, text=f"{idx+1}. {account.get('username', '')}", font=ctk.CTkFont(weight="bold"))
+            title.pack(side="left", padx=6, pady=6)
+
+            summary_text = "Shared room & shifts" if account.get("use_shared", True) else f"Custom | room {account.get('room', 'Г?\"')} | shifts {len(account.get('shifts', []))}"
+            ctk.CTkLabel(row, text=summary_text, text_color="gray80").pack(side="left", padx=6)
+
+            shared_var = ctk.BooleanVar(value=account.get("use_shared", True))
+            toggle = ctk.CTkCheckBox(
+                row,
+                text="Shared",
+                variable=shared_var,
+                onvalue=True,
+                offvalue=False,
+                command=lambda i=idx, var=shared_var: self.toggle_use_shared(i, var.get())
+            )
+            toggle.pack(side="left", padx=4)
+
+            cfg_btn = ctk.CTkButton(
+                row,
+                text="Custom Config",
+                width=110,
+                command=lambda i=idx: self.open_account_config(i),
+                state="normal" if not account.get("use_shared", True) else "disabled"
+            )
+            cfg_btn.pack(side="right", padx=4)
+
+            remove_btn = ctk.CTkButton(
+                row,
+                text="Remove",
+                width=70,
+                fg_color="red",
+                hover_color="darkred",
+                command=lambda i=idx: self.remove_account(i)
+            )
+            remove_btn.pack(side="right", padx=4)
+
+    def add_account(self):
+        """Add a new account to the list."""
+        username = self.account_user_entry.get().strip()
+        password = self.account_pass_entry.get().strip()
+
+        if not username or not password:
+            self.log_queue.put("Гs Л,? Please enter both username and password for the account.")
+            return
+
+        new_account = {
+            "username": username,
+            "password": password,
+            "use_shared": bool(self.default_shared_var.get()),
+            "room": "",
+            "cooldown": "",
+            "shifts": []
+        }
+        self.accounts.append(new_account)
+        self.save_accounts()
+        self.refresh_accounts_display()
+        self.account_user_entry.delete(0, 'end')
+        self.account_pass_entry.delete(0, 'end')
+        self.log_queue.put(f"Гo. Added account: {self.account_display_name(new_account)}")
+
+    def remove_account(self, index):
+        """Remove an account from the list."""
+        if 0 <= index < len(self.accounts):
+            removed = self.accounts.pop(index)
+            self.save_accounts()
+            self.refresh_accounts_display()
+            self.log_queue.put(f"dY-`Л,? Removed account: {self.account_display_name(removed, index=index)}")
+
+    def toggle_use_shared(self, index, use_shared):
+        """Toggle whether an account uses the shared config or its own."""
+        if 0 <= index < len(self.accounts):
+            self.accounts[index]["use_shared"] = bool(use_shared)
+            self.save_accounts()
+            self.refresh_accounts_display()
+
+    def open_account_config(self, index):
+        """Open a small dialog to set custom room/cooldown/shifts for an account."""
+        if not (0 <= index < len(self.accounts)):
+            return
+        account = self.accounts[index]
+        config_window = ctk.CTkToplevel(self)
+        config_window.title(f"Custom Config: {self.account_display_name(account, index)}")
+        config_window.geometry("520x520")
+        config_window.transient(self)
+        config_window.grab_set()
+
+        # Prefill local copy
+        shifts_local = account.get("shifts", []).copy()
+
+        form_frame = ctk.CTkFrame(config_window)
+        form_frame.pack(fill="x", padx=12, pady=10)
+
+        ctk.CTkLabel(form_frame, text="Room Number", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, padx=6, pady=6, sticky="w")
+        room_entry = ctk.CTkEntry(form_frame, placeholder_text="e.g., 2761")
+        room_entry.insert(0, account.get("room", ""))
+        room_entry.grid(row=0, column=1, padx=6, pady=6, sticky="ew")
+
+        ctk.CTkLabel(form_frame, text="Cooldown (sec)", font=ctk.CTkFont(weight="bold")).grid(row=1, column=0, padx=6, pady=6, sticky="w")
+        cooldown_entry = ctk.CTkEntry(form_frame, placeholder_text="e.g., 15")
+        cooldown_entry.insert(0, str(account.get("cooldown", "")))
+        cooldown_entry.grid(row=1, column=1, padx=6, pady=6, sticky="ew")
+        form_frame.grid_columnconfigure(1, weight=1)
+
+        # Shift entry
+        shift_frame = ctk.CTkFrame(config_window)
+        shift_frame.pack(fill="x", padx=12, pady=6)
+        ctk.CTkLabel(shift_frame, text="Date", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, padx=6, pady=4, sticky="w")
+        shift_date_entry = ctk.CTkEntry(shift_frame, placeholder_text="2025-12-01")
+        shift_date_entry.grid(row=0, column=1, padx=6, pady=4, sticky="ew")
+        ctk.CTkLabel(shift_frame, text="Shift Name", font=ctk.CTkFont(weight="bold")).grid(row=0, column=2, padx=6, pady=4, sticky="w")
+        shift_name_entry = ctk.CTkEntry(shift_frame, placeholder_text="Morning Post")
+        shift_name_entry.grid(row=0, column=3, padx=6, pady=4, sticky="ew")
+        shift_frame.grid_columnconfigure(1, weight=1); shift_frame.grid_columnconfigure(3, weight=1)
+
+        shifts_scroll = ctk.CTkScrollableFrame(config_window, height=220)
+        shifts_scroll.pack(fill="both", expand=True, padx=12, pady=(4, 10))
+
+        def refresh_shifts_local():
+            for widget in shifts_scroll.winfo_children():
+                widget.destroy()
+            if not shifts_local:
+                ctk.CTkLabel(shifts_scroll, text="No shifts yet.", text_color="gray").pack(pady=6)
+                return
+            for i, shift in enumerate(shifts_local):
+                row_local = ctk.CTkFrame(shifts_scroll)
+                row_local.pack(fill="x", padx=4, pady=2)
+                ctk.CTkLabel(row_local, text=f"{i+1}. {shift['date']} | {shift['name']}").pack(side="left", padx=6)
+                ctk.CTkButton(row_local, text="Remove", width=70, fg_color="red", hover_color="darkred",
+                              command=lambda idx=i: (shifts_local.pop(idx), refresh_shifts_local())).pack(side="right", padx=4)
+
+        def add_local_shift():
+            date_text = shift_date_entry.get().strip()
+            name_text = shift_name_entry.get().strip()
+            if date_text and name_text:
+                shifts_local.append({"date": date_text, "name": name_text})
+                shift_date_entry.delete(0, 'end')
+                shift_name_entry.delete(0, 'end')
+                refresh_shifts_local()
+            else:
+                messagebox.showerror("Missing data", "Please enter both date and shift name.")
+
+        add_shift_btn = ctk.CTkButton(shift_frame, text="Add", command=add_local_shift)
+        add_shift_btn.grid(row=0, column=4, padx=6, pady=4, sticky="ew")
+
+        button_bar = ctk.CTkFrame(config_window)
+        button_bar.pack(fill="x", padx=12, pady=10)
+
+        def save_custom_config():
+            room_val = room_entry.get().strip()
+            cooldown_val = cooldown_entry.get().strip()
+            if not room_val or not cooldown_val:
+                messagebox.showerror("Missing data", "Room and cooldown are required for a custom config.")
+                return
+            if not room_val.isdigit():
+                messagebox.showerror("Invalid room", "Room must be numeric.")
+                return
+            if not cooldown_val.isdigit():
+                messagebox.showerror("Invalid cooldown", "Cooldown must be a number.")
+                return
+            if not shifts_local:
+                messagebox.showerror("No shifts", "Add at least one shift for this account.")
+                return
+            account["room"] = room_val
+            account["cooldown"] = int(cooldown_val)
+            account["shifts"] = shifts_local.copy()
+            account["use_shared"] = False
+            self.save_accounts()
+            self.refresh_accounts_display()
+            self.log_queue.put(f"Saved custom config for {self.account_display_name(account, index)}")
+            config_window.destroy()
+
+        ctk.CTkButton(button_bar, text="Save Custom Config", command=save_custom_config).pack(side="left", padx=6)
+        ctk.CTkButton(button_bar, text="Cancel", fg_color="gray", hover_color="darkgray", command=config_window.destroy).pack(side="right", padx=6)
+
+        refresh_shifts_local()
+
     def load_presets(self):
         """Load room presets from file"""
         try:
@@ -814,59 +1106,102 @@ class BotApp(ctk.CTk):
             self.stop_bot()
 
     def stop_bot(self):
-        if self.bot_thread and self.bot_thread.is_alive():
+        running = any(t.is_alive() for t in self.bot_threads)
+        if running:
             from tkinter import messagebox
             if messagebox.askyesno("Stop Bot", "Are you sure you want to stop the bot?"):
                 self.update_status("stopping", "Stopping bot...")
                 self.stop_event.set()
-                self.log_queue.put("🛑 Stopping bot...")
+                self.log_queue.put("dY>` Stopping bot...")
                 self.stop_button.configure(state="disabled")
         else:
-            self.log_queue.put("ℹ️ No bot is currently running.")
+            self.log_queue.put("No bot is currently running.")
 
     def start_bot_thread(self):
-        if self.bot_thread and self.bot_thread.is_alive(): self.log_queue.put("ℹ️ Bot is already running."); return
-        room_number = self.room_entry.get().strip(); cooldown_str = self.cooldown_entry.get().strip()
-        if not room_number:
-            self.log_queue.put("❌ ERROR: Room Number is required.")
-            self.log_queue.put("💡 TIP: Find the room number in your Wardyati URL:")
-            self.log_queue.put("   • Current month: https://wardyati.com/rooms/2761 → Room: 2761")
-            self.log_queue.put("   • Other months: https://wardyati.com/rooms/2761/?view=monthly&year=2025&month=10 → Room: 2761")
-            return
-        if not room_number.isdigit():
-            self.log_queue.put("❌ ERROR: Room Number must contain only numbers.")
-            self.log_queue.put("💡 TIP: Enter just the numeric part from your room URL (e.g., 2761)")
-            return
-        if not cooldown_str:
-            self.log_queue.put("❌ ERROR: Cooldown time is required.")
-            self.log_queue.put("💡 TIP: Recommended cooldown is 15-30 seconds to avoid being blocked")
-            return
-        if not cooldown_str.isdigit():
-            self.log_queue.put("❌ ERROR: Cooldown must be a number (seconds).")
-            self.log_queue.put("💡 TIP: Enter a number like 15 or 20 (seconds between booking attempts)")
-            return
-        if not self.target_shifts:
-            self.log_queue.put("❌ ERROR: No shifts to book.")
-            self.log_queue.put("💡 TIP: Add at least one shift using the form above before starting the bot")
+        if any(t.is_alive() for t in self.bot_threads):
+            self.log_queue.put("Bot is already running.")
             return
 
-        # Confirmation dialog
+        if not self.accounts:
+            self.log_queue.put("ERROR: Add at least one account before starting.")
+            return
+
+        shared_room = self.room_entry.get().strip()
+        shared_cooldown = self.cooldown_entry.get().strip()
+        shared_shifts = self.target_shifts.copy()
+
+        runs = []
+        for idx, account in enumerate(self.accounts):
+            label = self.account_display_name(account, idx)
+            if account.get("use_shared", True):
+                if not shared_room:
+                    self.log_queue.put("ERROR: Room Number is required for shared mode.")
+                    return
+                if not shared_room.isdigit():
+                    self.log_queue.put("ERROR: Room Number must contain only numbers.")
+                    return
+                if not shared_cooldown:
+                    self.log_queue.put("ERROR: Cooldown time is required for shared mode.")
+                    return
+                if not shared_cooldown.isdigit():
+                    self.log_queue.put("ERROR: Cooldown must be a number (seconds).")
+                    return
+                if not shared_shifts:
+                    self.log_queue.put("ERROR: Add at least one shift for shared mode.")
+                    return
+                runs.append({"room": shared_room, "cooldown": int(shared_cooldown), "shifts": shared_shifts.copy(), "credentials": account, "label": label})
+            else:
+                room_val = str(account.get("room", "")).strip()
+                cooldown_val = str(account.get("cooldown", "")).strip()
+                shifts_val = account.get("shifts", [])
+                if not room_val or not cooldown_val:
+                    self.log_queue.put(f"ERROR: Account {label} is missing room or cooldown.")
+                    return
+                if not room_val.isdigit():
+                    self.log_queue.put(f"ERROR: Room must be numeric for account {label}.")
+                    return
+                if not str(cooldown_val).isdigit():
+                    self.log_queue.put(f"ERROR: Cooldown must be numeric for account {label}.")
+                    return
+                if not shifts_val:
+                    self.log_queue.put(f"ERROR: Add shifts to account {label} or switch it to shared mode.")
+                    return
+                runs.append({"room": room_val, "cooldown": int(cooldown_val), "shifts": shifts_val.copy(), "credentials": account, "label": label})
+
         from tkinter import messagebox
-        shift_count = len(self.target_shifts)
-        message = f"Start booking {shift_count} shift{'s' if shift_count > 1 else ''}?\n\nRoom: {room_number}\nCooldown: {cooldown_str} seconds"
-        if not messagebox.askyesno("Confirm Start Bot", message):
+        message_lines = [f"Accounts to start: {len(runs)}"]
+        shared_mode_accounts = sum(1 for r in runs if r["room"] == shared_room and r["shifts"] == shared_shifts)
+        message_lines.append(f"- Shared config: {shared_mode_accounts}")
+        message_lines.append(f"- Custom config: {len(runs) - shared_mode_accounts}")
+        message_lines.append(f"Shared room: {shared_room or 'n/a'} | cooldown: {shared_cooldown or 'n/a'}")
+        if not messagebox.askyesno("Confirm Start Bot", "\n".join(message_lines)):
             return
 
-        # Reset stop event and update UI
         self.stop_event.clear()
         self.update_status("running", "Bot is scanning for shifts...")
-        self.start_button.configure(state="disabled", text="Bot is running...")
+        self.start_button.configure(state="disabled", text=f"Running {len(runs)} account(s)...")
         self.add_button.configure(state="disabled")
         self.stop_button.configure(state="normal")
         self.refresh_stats()
+        self.active_runs = len(runs)
+        self.bot_threads = []
 
-        self.bot_thread = threading.Thread(target=lambda: asyncio.run(run_automation(self.config, self.target_shifts.copy(), room_number, int(cooldown_str), self.log_queue, self.stop_event)), daemon=True)
-        self.bot_thread.start()
+        for run in runs:
+            thread = threading.Thread(target=lambda r=run: asyncio.run(run_automation(self.config, r["shifts"], r["room"], r["cooldown"], self.log_queue, self.stop_event, credentials=r["credentials"], account_label=r["label"])), daemon=True)
+            self.bot_threads.append(thread)
+            thread.start()
+
+    def check_run_completion(self):
+        """Reset UI when all automation threads have finished."""
+        self.bot_threads = [t for t in self.bot_threads if t.is_alive()]
+        self.active_runs = len(self.bot_threads)
+        if not self.bot_threads:
+            if self.bot_status != "error":
+                self.update_status("idle", "Ready to start")
+            self.start_button.configure(state="normal", text="Start Bot")
+            self.add_button.configure(state="normal")
+            self.stop_button.configure(state="disabled")
+
     def update_log_from_queue(self):
         try:
             while True:
@@ -888,11 +1223,7 @@ class BotApp(ctk.CTk):
                 if "BOT FINISHED" in message or "FATAL ERROR" in message or "Setup Failed" in message or "🛑 Bot stopped" in message:
                     if "FATAL ERROR" in message or "Setup Failed" in message:
                         self.update_status("error", "Error occurred")
-                    else:
-                        self.update_status("idle", "Ready to start")
-                    self.start_button.configure(state="normal", text="🚀 Start Bot")
-                    self.add_button.configure(state="normal")
-                    self.stop_button.configure(state="disabled")
+                    self.check_run_completion()
         except queue.Empty: pass
         finally: self.after(100, self.update_log_from_queue)
 
