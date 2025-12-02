@@ -26,9 +26,77 @@ if os.path.exists(local_browsers_path):
 
 ACCOUNTS_FILE = os.path.join(get_base_path(), "accounts.json")
 
-# ==============================================================================
-# --- ⚙️ SETUP AND CONFIGURATION ---
-# ==============================================================================
+# Localization (Arabic default)
+LANGUAGES = {"en": "English", "ar": "العربية"}
+TRANSLATIONS = {
+    "app_title": {"en": "Wardyati Shift Booker", "ar": "حاجز الورديات"},
+    "status_ready": {"en": "Ready to start", "ar": "جاهز للبدء"},
+    "accounts_title": {"en": "Accounts (run multiple in parallel)", "ar": "الحسابات (تشغيل عدة حسابات معاً)"},
+    "accounts_checkbox": {"en": "New accounts use main room & shift list (default)", "ar": "الحسابات الجديدة تستخدم الغرفة والقائمة الرئيسية"},
+    "add_account": {"en": "Add Account", "ar": "إضافة حساب"},
+    "use_main_list": {"en": "Use main list", "ar": "استخدم القائمة الرئيسية"},
+    "account_specific": {"en": "Account-specific setup", "ar": "إعداد مخصص للحساب"},
+    "using_main_list": {"en": "Using main room & shift list", "ar": "يستخدم الغرفة والقائمة الرئيسية"},
+    "custom_summary": {"en": "Custom: room {room} | shifts {count}", "ar": "مخصص: غرفة {room} | ورديات {count}"},
+    "room_number": {"en": "Room Number", "ar": "رقم الغرفة"},
+    "cooldown": {"en": "Cooldown (sec)", "ar": "الانتظار (ثواني)"},
+    "date": {"en": "Date", "ar": "التاريخ"},
+    "shift_name": {"en": "Shift Name", "ar": "اسم الوردية"},
+    "add_shift": {"en": "Add Shift", "ar": "إضافة وردية"},
+    "start_bot": {"en": "Start Bot", "ar": "تشغيل البوت"},
+    "stop_bot": {"en": "Stop Bot", "ar": "إيقاف البوت"},
+    "target_shifts": {"en": "Target Shifts", "ar": "الورديات المستهدفة"},
+    "clear_all": {"en": "Clear All", "ar": "مسح الكل"},
+    "live_log": {"en": "Live Log", "ar": "السجل المباشر"},
+    "presets": {"en": "Presets", "ar": "الحفظات"},
+    "theme": {"en": "Theme", "ar": "المظهر"},
+    "language": {"en": "Language", "ar": "اللغة"},
+    "accounts_new_shared_error_room": {"en": "Room Number is required for accounts using the main list.", "ar": "رقم الغرفة مطلوب للحسابات التي تستخدم القائمة الرئيسية."},
+    "accounts_new_shared_error_cooldown": {"en": "Cooldown time is required for accounts using the main list.", "ar": "مدة الانتظار مطلوبة للحسابات التي تستخدم القائمة الرئيسية."},
+    "accounts_new_shared_error_shifts": {"en": "Add at least one shift to the main list (or switch the account to custom).", "ar": "أضف وردية واحدة على الأقل للقائمة الرئيسية أو استخدم إعداداً مخصصاً."},
+    "confirm_start_title": {"en": "Confirm Start Bot", "ar": "تأكيد تشغيل البوت"},
+    "confirm_start_shared": {"en": "Main list accounts", "ar": "حسابات القائمة الرئيسية"},
+    "confirm_start_custom": {"en": "Account-specific configs", "ar": "حسابات بإعداد مخصص"},
+    "confirm_start_shared_room": {"en": "Main room", "ar": "الغرفة الرئيسية"},
+    "confirm_start_shared_cooldown": {"en": "Cooldown", "ar": "مدة الانتظار"},
+}
+
+# Simple localization
+LANGUAGES = {"en": "English", "ar": "???????"}
+TRANSLATIONS = {
+    "app_title": {"en": "Wardyati Shift Booker", "ar": "???? ????????"},
+    "accounts_title": {"en": "Accounts (run multiple in parallel)", "ar": "???????? (????? ??? ?????? ????)"},
+    "accounts_checkbox": {"en": "New accounts use main room & shift list (default)", "ar": "???????? ??????? ?????? ?????? ???????? ????????"},
+    "add_account": {"en": "Add Account", "ar": "????? ????"},
+    "account_specific": {"en": "Account-specific setup", "ar": "????? ???? ??????"},
+    "use_main_list": {"en": "Use main list", "ar": "?????? ??????? ????????"},
+    "using_main_list": {"en": "Using main room & shift list", "ar": "?????? ?????? ???????? ????????"},
+    "custom_summary": {"en": "Custom: room {room} | shifts {count}", "ar": "????: ???? {room} | ?????? {count}"},
+    "room_number": {"en": "Room Number", "ar": "??? ??????"},
+    "cooldown": {"en": "Cooldown (sec)", "ar": "???????? (?????)"},
+    "date": {"en": "Date", "ar": "???????"},
+    "shift_name": {"en": "Shift Name", "ar": "??? ???????"},
+    "add_shift": {"en": "Add Shift", "ar": "????? ?????"},
+    "start_bot": {"en": "Start Bot", "ar": "????? ?????"},
+    "stop_bot": {"en": "Stop Bot", "ar": "????? ?????"},
+    "target_shifts": {"en": "Target Shifts", "ar": "???????? ?????????"},
+    "clear_all": {"en": "Clear All", "ar": "??? ????"},
+    "live_log": {"en": "Live Log", "ar": "????? ???????"},
+    "presets": {"en": "Presets", "ar": "???????"},
+    "theme": {"en": "Theme", "ar": "??????"},
+    "language": {"en": "Language", "ar": "?????"},
+    "accounts_new_shared_error_room": {"en": "Room Number is required for accounts using the main list.", "ar": "??? ?????? ????? ???????? ???? ?????? ??????? ????????."},
+    "accounts_new_shared_error_cooldown": {"en": "Cooldown time is required for accounts using the main list.", "ar": "??? ???????? ?????? ???????? ???? ?????? ??????? ????????."},
+    "accounts_new_shared_error_shifts": {"en": "Add at least one shift to the main list (or switch the account to custom).", "ar": "??? ????? ????? ??? ????? ??????? ???????? ?? ?????? ??????? ??????."},
+    "confirm_start_title": {"en": "Confirm Start Bot", "ar": "????? ????? ?????"},
+    "confirm_start_shared": {"en": "Main list accounts", "ar": "?????? ??????? ????????"},
+    "confirm_start_custom": {"en": "Account-specific configs", "ar": "?????? ?????? ????"},
+    "confirm_start_shared_room": {"en": "Main room", "ar": "?????? ????????"},
+    "confirm_start_shared_cooldown": {"en": "Cooldown", "ar": "??? ????????"},
+    "status_ready": {"en": "Ready to start", "ar": "???? ?????"},
+    "status_running": {"en": "Bot is scanning for shifts...", "ar": "????? ???? ?? ????????..."},
+    "status_stopping": {"en": "Stopping bot...", "ar": "????? ?????..."},
+}
 
 def get_playwright_browsers_path():
     """Determines the path where Playwright browsers are stored."""
@@ -183,6 +251,13 @@ async def run_automation(config, shifts_to_book, room_number, cooldown, log_queu
 # --- 🎨 MAIN GUI APPLICATION CLASS ---
 # ==============================================================================
 class BotApp(ctk.CTk):
+    def tr(self, key):
+        """Translate a key based on current language, fallback to English/key."""
+        try:
+            return TRANSLATIONS[key].get(self.language, TRANSLATIONS[key].get("en", key))
+        except Exception:
+            return key
+
     def __init__(self):
         super().__init__()
         self.config = None
@@ -192,12 +267,13 @@ class BotApp(ctk.CTk):
         self.bot_threads = []
         self.stop_event = threading.Event()
         self.bot_status = "idle"  # idle, running, stopping
+        self.language = "ar"  # default Arabic
         self.current_theme = "dark"  # Track current theme
         self.presets = self.load_presets()  # Load saved room presets
         self.accounts = self.load_accounts()  # Load saved accounts (multi-account)
         self.log_message_count = 0  # Track number of log messages
         self.active_runs = 0  # Track how many account runs are active
-        self.title("Wardyati Shift Booker"); self.geometry("1100x1100"); ctk.set_appearance_mode("dark"); ctk.set_default_color_theme("green")
+        self.title(self.tr("app_title")); self.geometry("1100x1100"); ctk.set_appearance_mode("dark"); ctk.set_default_color_theme("green")
 
         # Scrollable root container so all sections remain reachable on smaller screens
         self.scroll_container = ctk.CTkScrollableFrame(self, corner_radius=0, label_text=None)
@@ -207,17 +283,19 @@ class BotApp(ctk.CTk):
         # Header / status
         status_frame = ctk.CTkFrame(self.scroll_container, corner_radius=14)
         status_frame.grid(row=0, column=0, padx=14, pady=(14, 8), sticky="ew")
-        status_frame.grid_columnconfigure(0, weight=1); status_frame.grid_columnconfigure(3, weight=0)
+        status_frame.grid_columnconfigure(0, weight=1); status_frame.grid_columnconfigure(4, weight=0)
         self.status_icon = ctk.CTkLabel(status_frame, text="⚪", font=ctk.CTkFont(size=22))
         self.status_icon.grid(row=0, column=0, padx=(12, 6), pady=10, sticky="w")
-        self.status_text = ctk.CTkLabel(status_frame, text="Ready to start", font=ctk.CTkFont(size=16, weight="bold"))
+        self.status_text = ctk.CTkLabel(status_frame, text=self.tr("status_ready"), font=ctk.CTkFont(size=16, weight="bold"))
         self.status_text.grid(row=0, column=1, sticky="w")
-        self.presets_button = ctk.CTkButton(status_frame, text="📋 Presets", width=90, command=self.open_presets_window)
+        self.presets_button = ctk.CTkButton(status_frame, text="Presets", width=90, command=self.open_presets_window)
         self.presets_button.grid(row=0, column=2, padx=6, pady=10, sticky="e")
-        self.theme_button = ctk.CTkButton(status_frame, text="🌙 Theme", width=90, command=self.toggle_theme)
+        self.theme_button = ctk.CTkButton(status_frame, text="Theme", width=90, command=self.toggle_theme)
         self.theme_button.grid(row=0, column=3, padx=(0, 12), pady=10, sticky="e")
+        self.language_button = ctk.CTkButton(status_frame, text="العربية", width=90, command=self.toggle_language)
+        self.language_button.grid(row=0, column=4, padx=(0, 12), pady=10, sticky="e")
         self.progress_bar = ctk.CTkProgressBar(status_frame, height=12, corner_radius=8)
-        self.progress_bar.grid(row=1, column=0, columnspan=4, padx=12, pady=(0, 12), sticky="ew")
+        self.progress_bar.grid(row=1, column=0, columnspan=5, padx=12, pady=(0, 12), sticky="ew")
         self.progress_bar.set(0)
         self.progress_bar.grid_remove()
 
@@ -230,10 +308,10 @@ class BotApp(ctk.CTk):
             lbl = ctk.CTkLabel(frame, text=label_text, text_color="gray80", font=ctk.CTkFont(size=12))
             val = ctk.CTkLabel(frame, text=value_text, font=ctk.CTkFont(size=16, weight="bold"))
             lbl.pack(anchor="w", padx=10, pady=(8, 0)); val.pack(anchor="w", padx=10, pady=(0, 8))
-            return frame, val
-        self.shifts_count_pill, self.shifts_count_label = pill("Target shifts", "0")
-        self.cooldown_pill, self.cooldown_label = pill("Cooldown (s)", "—")
-        self.room_pill, self.room_label = pill("Room", "—")
+            return frame, lbl, val
+        self.shifts_count_pill, self.shifts_count_caption, self.shifts_count_label = pill("Target shifts", "0")
+        self.cooldown_pill, self.cooldown_caption, self.cooldown_label = pill("Cooldown (s)", "—")
+        self.room_pill, self.room_caption, self.room_label = pill("Room", "—")
         self.shifts_count_pill.grid(row=0, column=0, padx=6, pady=6, sticky="ew")
         self.cooldown_pill.grid(row=0, column=1, padx=6, pady=6, sticky="ew")
         self.room_pill.grid(row=0, column=2, padx=6, pady=6, sticky="ew")
@@ -243,7 +321,8 @@ class BotApp(ctk.CTk):
         accounts_frame.grid(row=2, column=0, padx=14, pady=6, sticky="ew")
         accounts_frame.grid_columnconfigure(1, weight=1); accounts_frame.grid_columnconfigure(2, weight=1)
 
-        ctk.CTkLabel(accounts_frame, text="Accounts (run multiple in parallel)", font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, padx=10, pady=8, sticky="w", columnspan=2)
+        self.accounts_title_label = ctk.CTkLabel(accounts_frame, text="Accounts (run multiple in parallel)", font=ctk.CTkFont(size=16, weight="bold"))
+        self.accounts_title_label.grid(row=0, column=0, padx=10, pady=8, sticky="w", columnspan=2)
         self.default_shared_var = ctk.BooleanVar(value=True)
         self.shared_hint = ctk.CTkCheckBox(accounts_frame, text="New accounts use main room & shift list (default)", variable=self.default_shared_var, onvalue=True, offvalue=False, fg_color="#22c55e", hover_color="#16a34a")
         self.shared_hint.grid(row=0, column=2, padx=10, pady=8, sticky="e")
@@ -252,8 +331,8 @@ class BotApp(ctk.CTk):
         self.account_user_entry.grid(row=1, column=0, padx=10, pady=6, sticky="ew")
         self.account_pass_entry = ctk.CTkEntry(accounts_frame, placeholder_text="Password", show="*")
         self.account_pass_entry.grid(row=1, column=1, padx=10, pady=6, sticky="ew")
-        add_account_btn = ctk.CTkButton(accounts_frame, text="Add Account", command=self.add_account)
-        add_account_btn.grid(row=1, column=2, padx=10, pady=6, sticky="ew")
+        self.add_account_button = ctk.CTkButton(accounts_frame, text="Add Account", command=self.add_account)
+        self.add_account_button.grid(row=1, column=2, padx=10, pady=6, sticky="ew")
 
         self.accounts_scroll = ctk.CTkScrollableFrame(accounts_frame, height=140)
         self.accounts_scroll.grid(row=2, column=0, columnspan=3, padx=10, pady=(4, 10), sticky="nsew")
@@ -263,17 +342,21 @@ class BotApp(ctk.CTk):
         session_frame = ctk.CTkFrame(self.scroll_container, corner_radius=14)
         session_frame.grid(row=3, column=0, padx=14, pady=6, sticky="ew")
         session_frame.grid_columnconfigure(1, weight=1); session_frame.grid_columnconfigure(3, weight=1)
-        ctk.CTkLabel(session_frame, text="Room Number", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, padx=10, pady=8, sticky="w")
+        self.room_label_widget = ctk.CTkLabel(session_frame, text="Room Number", font=ctk.CTkFont(weight="bold"))
+        self.room_label_widget.grid(row=0, column=0, padx=10, pady=8, sticky="w")
         self.room_entry = ctk.CTkEntry(session_frame, placeholder_text="e.g., 2761"); self.room_entry.grid(row=0, column=1, padx=10, pady=8, sticky="ew")
         self.room_entry.bind("<KeyRelease>", lambda e: self.refresh_stats())
-        ctk.CTkLabel(session_frame, text="Cooldown (sec)", font=ctk.CTkFont(weight="bold")).grid(row=0, column=2, padx=10, pady=8, sticky="w")
+        self.cooldown_label_widget = ctk.CTkLabel(session_frame, text="Cooldown (sec)", font=ctk.CTkFont(weight="bold"))
+        self.cooldown_label_widget.grid(row=0, column=2, padx=10, pady=8, sticky="w")
         self.cooldown_entry = ctk.CTkEntry(session_frame, placeholder_text="e.g., 15"); self.cooldown_entry.grid(row=0, column=3, padx=10, pady=8, sticky="ew")
         self.cooldown_entry.bind("<KeyRelease>", lambda e: self.refresh_stats())
-        ctk.CTkLabel(session_frame, text="Date", font=ctk.CTkFont(weight="bold")).grid(row=1, column=0, padx=10, pady=8, sticky="w")
+        self.date_label_widget = ctk.CTkLabel(session_frame, text="Date", font=ctk.CTkFont(weight="bold"))
+        self.date_label_widget.grid(row=1, column=0, padx=10, pady=8, sticky="w")
         self.date_entry = ctk.CTkEntry(session_frame, placeholder_text="Copy exact date from Wardyati (e.g., 2025-12-01)")
         self.date_entry.grid(row=1, column=1, padx=10, pady=8, sticky="ew")
         self.date_entry.bind("<KeyRelease>", self.validate_inputs); self.date_entry.bind("<Return>", lambda e: self.name_entry.focus())
-        ctk.CTkLabel(session_frame, text="Shift Name", font=ctk.CTkFont(weight="bold")).grid(row=1, column=2, padx=10, pady=8, sticky="w")
+        self.shift_label_widget = ctk.CTkLabel(session_frame, text="Shift Name", font=ctk.CTkFont(weight="bold"))
+        self.shift_label_widget.grid(row=1, column=2, padx=10, pady=8, sticky="w")
         self.name_entry = ctk.CTkEntry(session_frame, placeholder_text='e.g., "Morning Post"')
         self.name_entry.grid(row=1, column=3, padx=10, pady=8, sticky="ew")
         self.name_entry.bind("<KeyRelease>", self.validate_inputs); self.name_entry.bind("<Return>", lambda e: self.add_shift() if self.add_button.cget("state") == "normal" else None)
@@ -281,11 +364,11 @@ class BotApp(ctk.CTk):
         self.validation_label.grid(row=2, column=0, columnspan=4, padx=10, pady=(0, 4), sticky="w")
         actions_frame = ctk.CTkFrame(session_frame, fg_color="transparent"); actions_frame.grid(row=3, column=0, columnspan=4, padx=10, pady=(2, 8), sticky="ew")
         actions_frame.grid_columnconfigure((0, 1, 2), weight=1)
-        self.add_button = ctk.CTkButton(actions_frame, text="Add Shift ➕", command=self.add_shift)
+        self.add_button = ctk.CTkButton(actions_frame, text="Add Shift", command=self.add_shift)
         self.add_button.grid(row=0, column=0, padx=6, pady=4, sticky="ew")
         self.start_button = ctk.CTkButton(actions_frame, text="Start Bot", command=self.start_bot_thread, height=38, font=ctk.CTkFont(size=15, weight="bold"))
         self.start_button.grid(row=0, column=1, padx=6, pady=4, sticky="ew")
-        self.stop_button = ctk.CTkButton(actions_frame, text="🛑 Stop Bot", command=self.stop_bot, height=38, font=ctk.CTkFont(size=15, weight="bold"), fg_color="red", hover_color="darkred", state="disabled")
+        self.stop_button = ctk.CTkButton(actions_frame, text="Stop Bot", command=self.stop_bot, height=38, font=ctk.CTkFont(size=15, weight="bold"), fg_color="red", hover_color="darkred", state="disabled")
         self.stop_button.grid(row=0, column=2, padx=6, pady=4, sticky="ew")
 
         # Shifts list
@@ -293,7 +376,8 @@ class BotApp(ctk.CTk):
         display_frame.grid(row=4, column=0, padx=14, pady=6, sticky="nsew")
         display_frame.grid_columnconfigure(0, weight=1); display_frame.grid_rowconfigure(1, weight=1)
         header_frame = ctk.CTkFrame(display_frame, fg_color="transparent"); header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=8)
-        ctk.CTkLabel(header_frame, text="🎯 Target Shifts", font=ctk.CTkFont(size=16, weight="bold")).pack(side="left")
+        self.target_shifts_label = ctk.CTkLabel(header_frame, text="Target Shifts", font=ctk.CTkFont(size=16, weight="bold"))
+        self.target_shifts_label.pack(side="left")
         self.clear_all_button = ctk.CTkButton(header_frame, text="Clear All", width=100, height=30, command=self.clear_all_shifts); self.clear_all_button.pack(side="right")
         self.shifts_scroll_frame = ctk.CTkScrollableFrame(display_frame, height=140)
         self.shifts_scroll_frame.grid(row=1, column=0, padx=10, pady=(0, 10), sticky="nsew")
@@ -304,7 +388,8 @@ class BotApp(ctk.CTk):
         log_frame.grid_columnconfigure(0, weight=1); log_frame.grid_rowconfigure(1, weight=1)
         log_header_frame = ctk.CTkFrame(log_frame, fg_color="transparent"); log_header_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=8)
         log_title_frame = ctk.CTkFrame(log_header_frame, fg_color="transparent"); log_title_frame.pack(side="left", fill="x", expand=True)
-        ctk.CTkLabel(log_title_frame, text="📡 Live Log", font=ctk.CTkFont(size=16, weight="bold")).pack(side="left")
+        self.log_title_label = ctk.CTkLabel(log_title_frame, text="Live Log", font=ctk.CTkFont(size=16, weight="bold"))
+        self.log_title_label.pack(side="left")
         self.log_stats_label = ctk.CTkLabel(log_title_frame, text="Messages: 0", font=ctk.CTkFont(size=12), text_color="gray80")
         self.log_stats_label.pack(side="left", padx=(12, 0))
         log_controls_frame = ctk.CTkFrame(log_header_frame, fg_color="transparent"); log_controls_frame.pack(side="right")
@@ -322,6 +407,8 @@ class BotApp(ctk.CTk):
         self.bind("<Control-Return>", self.shortcut_add_shift)
         self.bind("<Escape>", self.shortcut_stop_bot)
         self.focus_set()  # Enable keyboard shortcuts
+        # Apply initial language labels
+        self.apply_language()
     def initial_setup(self):
         self.update_status("initializing", "Initializing...")
         self.start_button.configure(state="disabled", text="Initializing...")
@@ -564,11 +651,54 @@ class BotApp(ctk.CTk):
         if self.current_theme == "dark":
             ctk.set_appearance_mode("light")
             self.current_theme = "light"
-            self.theme_button.configure(text="☀️")  # Sun icon for light mode
+            self.theme_button.configure(text=self.tr("theme"))
         else:
             ctk.set_appearance_mode("dark")
             self.current_theme = "dark"
-            self.theme_button.configure(text="🌙")  # Moon icon for dark mode
+            self.theme_button.configure(text=self.tr("theme"))
+
+    def toggle_language(self):
+        """Switch between Arabic and English UI labels."""
+        self.language = "en" if self.language == "ar" else "ar"
+        self.apply_language()
+
+    def apply_language(self):
+        """Apply translated labels to key widgets."""
+        try:
+            self.title(self.tr("app_title"))
+            self.status_text.configure(text=self.tr("status_ready"))
+            self.language_button.configure(text=LANGUAGES.get(self.language, self.language))
+            self.presets_button.configure(text=self.tr("presets"))
+            self.theme_button.configure(text=self.tr("theme"))
+
+            # Accounts area
+            self.accounts_title_label.configure(text=self.tr("accounts_title"))
+            self.shared_hint.configure(text=self.tr("accounts_checkbox"))
+            self.add_account_button.configure(text=self.tr("add_account"))
+
+            # Session labels
+            self.room_label_widget.configure(text=self.tr("room_number"))
+            self.cooldown_label_widget.configure(text=self.tr("cooldown"))
+            self.date_label_widget.configure(text=self.tr("date"))
+            self.shift_label_widget.configure(text=self.tr("shift_name"))
+            self.add_button.configure(text=self.tr("add_shift"))
+            self.start_button.configure(text=self.tr("start_bot"))
+            self.stop_button.configure(text=self.tr("stop_bot"))
+
+            # Shifts / Log headers
+            self.target_shifts_label.configure(text=self.tr("target_shifts"))
+            self.clear_all_button.configure(text=self.tr("clear_all"))
+            self.log_title_label.configure(text=self.tr("live_log"))
+
+            # Pills captions
+            self.shifts_count_caption.configure(text=self.tr("target_shifts"))
+            self.cooldown_caption.configure(text=self.tr("cooldown"))
+            self.room_caption.configure(text=self.tr("room_number"))
+
+            # Re-render account rows to pick up translated text
+            self.refresh_accounts_display()
+        except Exception:
+            pass
 
     def clear_log(self):
         """Clear the log textbox and reset message count"""
@@ -695,13 +825,13 @@ class BotApp(ctk.CTk):
             title = ctk.CTkLabel(row, text=f"{idx+1}. {account.get('username', '')}", font=ctk.CTkFont(weight="bold"))
             title.pack(side="left", padx=6, pady=6)
 
-            summary_text = "Using main room & shift list" if account.get("use_shared", True) else f"Custom: room {account.get('room', 'Г?\"')} | shifts {len(account.get('shifts', []))}"
+            summary_text = self.tr("using_main_list") if account.get("use_shared", True) else self.tr("custom_summary").format(room=account.get('room', '—'), count=len(account.get('shifts', [])))
             ctk.CTkLabel(row, text=summary_text, text_color="gray80").pack(side="left", padx=6)
 
             shared_var = ctk.BooleanVar(value=account.get("use_shared", True))
             toggle = ctk.CTkCheckBox(
                 row,
-                text="Use main list",
+                text=self.tr("use_main_list"),
                 variable=shared_var,
                 onvalue=True,
                 offvalue=False,
@@ -711,7 +841,7 @@ class BotApp(ctk.CTk):
 
             cfg_btn = ctk.CTkButton(
                 row,
-                text="Account-specific setup",
+                text=self.tr("account_specific"),
                 width=110,
                 command=lambda i=idx: self.open_account_config(i),
                 state="normal" if not account.get("use_shared", True) else "disabled"
@@ -1135,19 +1265,19 @@ class BotApp(ctk.CTk):
             label = self.account_display_name(account, idx)
             if account.get("use_shared", True):
                 if not shared_room:
-                    self.log_queue.put("ERROR: Room Number is required for accounts using the main list.")
+                    self.log_queue.put(self.tr("accounts_new_shared_error_room"))
                     return
                 if not shared_room.isdigit():
                     self.log_queue.put("ERROR: Room Number must contain only numbers.")
                     return
                 if not shared_cooldown:
-                    self.log_queue.put("ERROR: Cooldown time is required for accounts using the main list.")
+                    self.log_queue.put(self.tr("accounts_new_shared_error_cooldown"))
                     return
                 if not shared_cooldown.isdigit():
                     self.log_queue.put("ERROR: Cooldown must be a number (seconds).")
                     return
                 if not shared_shifts:
-                    self.log_queue.put("ERROR: Add at least one shift to the main list (or switch the account to custom).")
+                    self.log_queue.put(self.tr("accounts_new_shared_error_shifts"))
                     return
                 runs.append({"room": shared_room, "cooldown": int(shared_cooldown), "shifts": shared_shifts.copy(), "credentials": account, "label": label})
             else:

@@ -32,6 +32,7 @@ If you prefer source, the batch scripts still work (`RUN BOT.bat`, `RUN BOT HIDD
 - Keyboard shortcuts: F5 = Start | Esc = Stop | Ctrl+Enter = Add shift.
 - Shift reordering (↑/↓ buttons) to set priority.
 - Enhanced logs with timestamps, colors, and message counter.
+- Language toggle: Arabic (default) and English (header button).
 
 ## Important notes
 - Keep the app window open while running.
