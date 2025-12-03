@@ -3,6 +3,10 @@
 Friendly guide for running the bot, now with multi-account booking.
 This README assumes you have downloaded the bot as a zip file, which includes `bot.py`, the `ms-playwright` browser files, and `RUN BOT HIDDEN.vbs`.
 
+## Prerequisites
+1.  **Python**: Ensure Python is installed on your system and added to your system's PATH. You can download it from [python.org](https://www.python.org/downloads/).
+2.  **FIRST TIME SETUP.bat**: This script automates the installation of necessary Python libraries (`playwright`, `customtkinter`) and downloads the Chromium browser required by Playwright. You *must* run this script once before running the bot for the first time.
+
 ## Setup & Run
 1.  **Unzip the downloaded file**: Extract the contents of the zip file to a folder of your choice.
 2.  Run `RUN BOT HIDDEN.vbs` to launch the bot in the background without a console window.
