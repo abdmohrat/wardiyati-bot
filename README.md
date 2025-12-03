@@ -5,16 +5,15 @@ This README assumes you have downloaded the bot as a zip file, which includes `b
 
 ## Setup & Run
 1.  **Unzip the downloaded file**: Extract the contents of the zip file to a folder of your choice.
-2.  **First-time setup**: Run `FIRST TIME SETUP.bat`. This script will install necessary Python packages. (The browser files are already included in the `ms-playwright` folder within the zip).
-3.  Once setup is complete, run `RUN BOT HIDDEN.vbs` to launch the bot in the background without a console window.
-4.  On first launch of `bot.py`, enter your Wardyati username (email) and password when prompted.
-5.  Fill in:
+2.  Run `RUN BOT HIDDEN.vbs` to launch the bot in the background without a console window.
+3.  On first launch of `bot.py`, enter your Wardyati username (email) and password when prompted.
+4.  Fill in:
     - **Room Number**: From your Wardyati room URL (e.g., `2761`).
     - **Cooldown (sec)**: Delay between booking attempts (15–30 recommended).
     - **Date**: Copy exact date from Wardyati (e.g., `2025-12-01`).
     - **Shift Name**: Copy exact shift title (e.g., `Morning`, `Mid`, `Night`).
-6.  Click **Add Shift to Target List** for each shift.
-7.  Click **Start Bot**. The bot will log in, scan, and book when available with live log updates.
+5.  Click **Add Shift to Target List** for each shift.
+6.  Click **Start Bot**. The bot will log in, scan, and book when available with live log updates.
 
 ## New: Multi-account booking
 - **Accounts panel**: Add multiple username/password pairs (saved locally to `accounts.json`, auto-loaded next run).
